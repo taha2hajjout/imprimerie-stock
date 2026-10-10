@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  GESTIONNAIRE
+  MAGASINIER
+}
+
+enum ConsumableType {
+  PAPIER
+  ENCRE
+  PLAQUE
+  DIVERS
+}
+
+enum PaperFormat {
+  A4
+  A3
+  BOBINE
+}
+
+enum PaperFinish {
+  MAT
+  BRILLANT
+}
+
+enum MovementType {
+  ENTREE
+  SORTIE
+  GACHE
+}
+
+model User {
+  id        String          @id @default(cuid())
+  email     String          @unique
+  password  String
+  role      Role            @default(MAGASINIER)
+  movements StockMovement[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([email])
+}
+
+model Consumable {
+  id           String          @id @default(cuid())
+  name         String
+  type         ConsumableType
+  unit         String
+  currentStock Float           @default(0)
+  minThreshold Float
+  paperDetail  PaperDetail?
+  movements    StockMovement[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  // soft delete — conserve l'historique des mouvements liés
+  deletedAt    DateTime?
+
+  @@index([type])
+  @@index([deletedAt])
+  @@index([currentStock, minThreshold])
+}
+
+model PaperDetail {
+  id           String      @id @default(cuid())
+  consumableId String      @unique
+  consumable   Consumable  @relation(fields: [consumableId], references: [id], onDelete: Cascade)
+  weight       Int
+  format       PaperFormat
+  finish       PaperFinish
+}
+
+model StockMovement {
+  id                String       @id @default(cuid())
+  consumableId      String
+  consumable        Consumable   @relation(fields: [consumableId], references: [id])
+  userId            String
+  user              User         @relation(fields: [userId], references: [id])
+  quantity          Float
+  type              MovementType
+  referenceCommande String?
+  createdAt         DateTime     @default(now())
+
+  @@index([consumableId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([type, createdAt])
+}
