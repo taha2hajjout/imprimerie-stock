@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import Sidebar from "@/components/layout/Sidebar"
 import Header from "@/components/layout/Header"
+import { MainContent } from "@/components/layout/MainContent"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
@@ -12,7 +13,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <Sidebar role={session.user.role} />
       <div className="flex flex-1 flex-col min-w-0">
         <Header user={session.user} />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <MainContent>{children}</MainContent>
       </div>
     </div>
   )

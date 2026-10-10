@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
+import { Plus, ArrowLeftRight } from "lucide-react"
 
 const typeLabel: Record<string, string> = { ENTREE: "Entrée", SORTIE: "Sortie", GACHE: "Gâche" }
-const typeColor: Record<string, string> = {
-  ENTREE: "bg-green-100 text-green-800",
-  SORTIE: "bg-blue-100 text-blue-800",
-  GACHE: "bg-red-100 text-red-800",
+const typeBadge: Record<string, string> = {
+  ENTREE: "bg-green-100 text-green-700",
+  SORTIE: "bg-blue-100 text-blue-700",
+  GACHE: "bg-red-100 text-red-700",
 }
 
 export default async function MovementsPage() {
@@ -21,48 +22,60 @@ export default async function MovementsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Mouvements de stock</h1>
-        <Link href="/movements/new" className="btn-primary">+ Saisir un mouvement</Link>
+        <h1 className="page-title">Mouvements</h1>
+        <Link href="/movements/new" className="btn-primary">
+          <Plus size={14} />
+          Saisir un mouvement
+        </Link>
       </div>
 
       <div className="card overflow-hidden">
         {movements.length === 0 ? (
-          <p className="text-center text-gray-400 py-16 text-sm">Aucun mouvement enregistré.</p>
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <ArrowLeftRight size={28} className="text-border" />
+            <p className="text-sm text-muted">Aucun mouvement enregistré.</p>
+          </div>
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                {["Date", "Produit", "Type", "Quantité", "Référence", "Utilisateur"].map((h) => (
-                  <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 bg-white">
-              {movements.map((m) => (
-                <tr key={m.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-3 text-sm text-gray-500 whitespace-nowrap">
-                    {new Date(m.createdAt).toLocaleDateString("fr-FR", {
-                      day: "2-digit", month: "short", year: "numeric",
-                      hour: "2-digit", minute: "2-digit",
-                    })}
-                  </td>
-                  <td className="px-6 py-3 text-sm font-medium text-gray-900">{m.consumable.name}</td>
-                  <td className="px-6 py-3">
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${typeColor[m.type]}`}>
-                      {typeLabel[m.type]}
-                    </span>
-                  </td>
-                  <td className="px-6 py-3 text-sm text-gray-700">
-                    {m.type === "ENTREE" ? "+" : "-"}{m.quantity} {m.consumable.unit}
-                  </td>
-                  <td className="px-6 py-3 text-sm text-gray-500">{m.referenceCommande ?? "—"}</td>
-                  <td className="px-6 py-3 text-sm text-gray-500">{m.user.email}</td>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-border">
+              <thead>
+                <tr className="bg-paper/60">
+                  {["Date", "Produit", "Type", "Quantité", "Référence", "Utilisateur"].map((h) => (
+                    <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-muted">
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {movements.map((m) => (
+                  <tr key={m.id} className="hover:bg-paper/40 transition-colors">
+                    <td className="px-5 py-3.5 text-xs text-muted whitespace-nowrap">
+                      {new Date(m.createdAt).toLocaleDateString("fr-FR", {
+                        day: "2-digit", month: "short", year: "numeric",
+                        hour: "2-digit", minute: "2-digit",
+                      })}
+                    </td>
+                    <td className="px-5 py-3.5 text-sm font-medium text-text">{m.consumable.name}</td>
+                    <td className="px-5 py-3.5">
+                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${typeBadge[m.type]}`}>
+                        {typeLabel[m.type]}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5 text-sm">
+                      <span className={m.type === "ENTREE" ? "text-ok font-semibold" : "text-danger font-semibold"}>
+                        {m.type === "ENTREE" ? "+" : "−"}
+                      </span>
+                      <span className="text-text">{m.quantity}</span>{" "}
+                      <span className="text-muted text-xs">{m.consumable.unit}</span>
+                    </td>
+                    <td className="px-5 py-3.5 text-sm text-muted">{m.referenceCommande ?? <span className="text-border">—</span>}</td>
+                    <td className="px-5 py-3.5 text-xs text-muted">{m.user.email}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

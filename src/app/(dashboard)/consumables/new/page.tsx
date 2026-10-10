@@ -9,7 +9,7 @@ export default async function NewConsumablePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Nouveau consommable</h1>
+      <h1 className="page-title">Nouveau consommable</h1>
       <ConsumableForm action={createConsumable} />
     </div>
   )

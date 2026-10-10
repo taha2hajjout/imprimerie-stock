@@ -2,29 +2,22 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import type { LucideIcon } from "lucide-react"
 
-export function ActiveLink({
-  href,
-  icon,
-  label,
-}: {
-  href: string
-  icon: string
-  label: string
-}) {
+export function ActiveLink({ href, icon: Icon, label }: { href: string; icon: LucideIcon; label: string }) {
   const pathname = usePathname()
-  const isActive = pathname === href || pathname.startsWith(href + "/")
+  const isActive = pathname === href || (href !== "/dashboard" && pathname.startsWith(href + "/"))
 
   return (
     <Link
       href={href}
-      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
         isActive
-          ? "bg-indigo-800 text-white"
-          : "text-indigo-200 hover:bg-indigo-800 hover:text-white"
+          ? "bg-white/10 text-white"
+          : "text-white/50 hover:bg-white/[0.05] hover:text-white/75"
       }`}
     >
-      <span className="text-base">{icon}</span>
+      <Icon size={15} strokeWidth={isActive ? 2 : 1.75} className={isActive ? "text-accent" : ""} />
       {label}
     </Link>
   )

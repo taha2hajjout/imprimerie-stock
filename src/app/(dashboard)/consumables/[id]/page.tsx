@@ -19,7 +19,7 @@ export default async function EditConsumablePage({ params }: { params: Promise<{
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Modifier — {consumable.name}</h1>
+      <h1 className="page-title">Modifier — {consumable.name}</h1>
       <ConsumableForm action={updateConsumable} initialData={consumable} />
     </div>
   )

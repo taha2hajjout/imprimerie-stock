@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
+import { Package, AlertTriangle, ArrowLeftRight, Plus, TrendingDown } from "lucide-react"
+import { StockChart } from "@/components/StockChart"
 
 export default async function DashboardPage() {
   const [totalConsumables, recentMovements, allStocks] = await Promise.all([
@@ -20,50 +22,85 @@ export default async function DashboardPage() {
 
   const alerts = allStocks.filter((c) => c.currentStock <= c.minThreshold)
 
-  const movTypeLabel: Record<string, string> = { ENTREE: "Entrée", SORTIE: "Sortie", GACHE: "Gâche" }
-  const movTypeColor: Record<string, string> = {
-    ENTREE: "bg-green-100 text-green-800",
-    SORTIE: "bg-blue-100 text-blue-800",
-    GACHE: "bg-red-100 text-red-800",
+  const chartData = allStocks
+    .sort((a, b) => a.currentStock / Math.max(a.minThreshold, 0.01) - b.currentStock / Math.max(b.minThreshold, 0.01))
+    .slice(0, 10)
+    .map((c) => ({
+      name: c.name.length > 14 ? c.name.slice(0, 13) + "…" : c.name,
+      fullName: c.name,
+      ratio: Math.min(3, parseFloat((c.currentStock / Math.max(c.minThreshold, 0.01)).toFixed(2))),
+      isLow: c.currentStock <= c.minThreshold,
+    }))
+
+  const movTypeBadge: Record<string, string> = {
+    ENTREE: "bg-green-100 text-green-700",
+    SORTIE: "bg-blue-100 text-blue-700",
+    GACHE: "bg-red-100 text-red-700",
   }
+  const movTypeLabel: Record<string, string> = { ENTREE: "Entrée", SORTIE: "Sortie", GACHE: "Gâche" }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Tableau de bord</h1>
+      <h1 className="page-title">Tableau de bord</h1>
 
-      {/* KPI cards */}
+      {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="card p-6">
-          <p className="text-sm font-medium text-gray-500">Consommables actifs</p>
-          <p className="mt-2 text-3xl font-bold text-gray-900">{totalConsumables}</p>
+        <div className="card p-5 flex items-start gap-4">
+          <div className="rounded-lg bg-accent/10 p-2.5 flex-shrink-0">
+            <Package size={18} className="text-accent" />
+          </div>
+          <div>
+            <p className="text-3xl font-bold text-text">{totalConsumables}</p>
+            <p className="text-xs text-muted font-medium uppercase tracking-wide mt-0.5">Consommables actifs</p>
+          </div>
         </div>
-        <div className={`card p-6 ${alerts.length > 0 ? "border-red-300 bg-red-50" : ""}`}>
-          <p className="text-sm font-medium text-gray-500">Alertes de stock</p>
-          <p className={`mt-2 text-3xl font-bold ${alerts.length > 0 ? "text-red-700" : "text-gray-900"}`}>
-            {alerts.length}
-          </p>
+
+        <div className={`card p-5 flex items-start gap-4 ${alerts.length > 0 ? "border-danger/30 bg-red-50" : ""}`}>
+          <div className={`rounded-lg p-2.5 flex-shrink-0 ${alerts.length > 0 ? "bg-danger/10" : "bg-paper"}`}>
+            <AlertTriangle size={18} className={alerts.length > 0 ? "text-danger" : "text-muted"} />
+          </div>
+          <div>
+            <p className={`text-3xl font-bold ${alerts.length > 0 ? "text-danger" : "text-text"}`}>{alerts.length}</p>
+            <p className="text-xs text-muted font-medium uppercase tracking-wide mt-0.5">Alertes critiques</p>
+          </div>
         </div>
-        <div className="card p-6">
-          <p className="text-sm font-medium text-gray-500">Mouvements récents</p>
-          <p className="mt-2 text-3xl font-bold text-gray-900">{recentMovements.length}</p>
+
+        <div className="card p-5 flex items-start gap-4">
+          <div className="rounded-lg bg-blue-50 p-2.5 flex-shrink-0">
+            <ArrowLeftRight size={18} className="text-blue-500" />
+          </div>
+          <div>
+            <p className="text-3xl font-bold text-text">{recentMovements.length}</p>
+            <p className="text-xs text-muted font-medium uppercase tracking-wide mt-0.5">Mouvements récents</p>
+          </div>
         </div>
       </div>
 
-      {/* Alerts banner */}
+      {/* Stock level chart */}
+      {allStocks.length > 0 && (
+        <div className="card p-5">
+          <h2 className="font-semibold text-text mb-4 text-sm">Niveaux de stock</h2>
+          <StockChart data={chartData} />
+        </div>
+      )}
+
+      {/* Alerts */}
       {alerts.length > 0 && (
-        <div className="card border-red-300 bg-red-50 p-4">
-          <h2 className="font-semibold text-red-800 mb-3">
-            ⚠ {alerts.length} produit(s) en rupture ou sous le seuil critique
-          </h2>
-          <ul className="space-y-1">
+        <div className="card overflow-hidden border-danger/25">
+          <div className="flex items-center gap-2 border-b border-danger/15 bg-red-50 px-5 py-3.5">
+            <TrendingDown size={14} className="text-danger flex-shrink-0" />
+            <p className="text-sm font-semibold text-danger">
+              {alerts.length} produit{alerts.length > 1 ? "s" : ""} sous le seuil critique
+            </p>
+          </div>
+          <ul className="divide-y divide-border">
             {alerts.map((c) => (
-              <li key={c.id} className="text-sm text-red-700 flex items-center gap-2">
-                <span>•</span>
-                <Link href={`/consumables/${c.id}`} className="hover:underline font-medium">
+              <li key={c.id} className="flex items-center justify-between px-5 py-3">
+                <Link href={`/consumables/${c.id}`} className="text-sm font-medium text-text hover:text-accent transition-colors">
                   {c.name}
                 </Link>
-                <span className="text-red-500">
-                  — {c.currentStock} {c.unit} (seuil : {c.minThreshold} {c.unit})
+                <span className="text-xs text-danger">
+                  {c.currentStock} {c.unit} — seuil {c.minThreshold} {c.unit}
                 </span>
               </li>
             ))}
@@ -73,47 +110,57 @@ export default async function DashboardPage() {
 
       {/* Recent movements */}
       <div className="card overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="font-semibold text-gray-900">Derniers mouvements</h2>
-          <Link href="/movements/new" className="btn-primary text-xs px-3 py-1.5">
-            + Saisir un mouvement
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <h2 className="font-semibold text-text text-sm">Derniers mouvements</h2>
+          <Link href="/movements/new" className="btn-primary text-xs px-3 py-1.5 gap-1">
+            <Plus size={13} />
+            Saisir un mouvement
           </Link>
         </div>
+
         {recentMovements.length === 0 ? (
-          <p className="text-center text-gray-400 py-10 text-sm">Aucun mouvement enregistré.</p>
+          <div className="flex flex-col items-center justify-center py-16 gap-2">
+            <ArrowLeftRight size={28} className="text-border" />
+            <p className="text-sm text-muted">Aucun mouvement enregistré.</p>
+          </div>
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                {["Produit", "Type", "Quantité", "Utilisateur", "Date"].map((h) => (
-                  <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {recentMovements.map((m) => (
-                <tr key={m.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-3 text-sm font-medium text-gray-900">{m.consumable.name}</td>
-                  <td className="px-6 py-3">
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${movTypeColor[m.type]}`}>
-                      {movTypeLabel[m.type]}
-                    </span>
-                  </td>
-                  <td className="px-6 py-3 text-sm text-gray-700">
-                    {m.quantity} {m.consumable.unit}
-                  </td>
-                  <td className="px-6 py-3 text-sm text-gray-500">{m.user.email}</td>
-                  <td className="px-6 py-3 text-sm text-gray-500">
-                    {new Date(m.createdAt).toLocaleDateString("fr-FR", {
-                      day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
-                    })}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-border">
+              <thead>
+                <tr className="bg-paper/60">
+                  {["Produit", "Type", "Quantité", "Utilisateur", "Date"].map((h) => (
+                    <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {recentMovements.map((m) => (
+                  <tr key={m.id} className="hover:bg-paper/40 transition-colors">
+                    <td className="px-5 py-3.5 text-sm font-medium text-text">{m.consumable.name}</td>
+                    <td className="px-5 py-3.5">
+                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${movTypeBadge[m.type]}`}>
+                        {movTypeLabel[m.type]}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5 text-sm text-text">
+                      <span className={m.type === "ENTREE" ? "text-ok" : "text-danger"}>
+                        {m.type === "ENTREE" ? "+" : "−"}
+                      </span>
+                      {m.quantity} {m.consumable.unit}
+                    </td>
+                    <td className="px-5 py-3.5 text-sm text-muted">{m.user.email}</td>
+                    <td className="px-5 py-3.5 text-xs text-muted whitespace-nowrap">
+                      {new Date(m.createdAt).toLocaleDateString("fr-FR", {
+                        day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+                      })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
